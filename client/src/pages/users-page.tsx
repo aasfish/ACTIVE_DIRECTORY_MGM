@@ -33,9 +33,30 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 
+interface ADUser {
+  id: number;
+  samAccountName: string;
+  displayName: string;
+  givenName: string;
+  surname: string;
+  email: string;
+  title: string;
+  department: string;
+  company: string;
+  officePhone: string;
+  mobile: string;
+  streetAddress: string;
+  city: string;
+  state: string;
+  country: string;
+  enabled: boolean;
+  accountExpirationDate: Date | null;
+  mustChangePassword: boolean;
+}
+
 export default function UsersPage() {
   const { toast } = useToast();
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading } = useQuery<ADUser[]>({
     queryKey: ["/api/ad/users"],
   });
 
@@ -44,9 +65,21 @@ export default function UsersPage() {
     defaultValues: {
       samAccountName: "",
       displayName: "",
+      givenName: "",
+      surname: "",
       email: "",
+      title: "",
       department: "",
+      company: "",
+      officePhone: "",
+      mobile: "",
+      streetAddress: "",
+      city: "",
+      state: "",
+      country: "",
       enabled: true,
+      accountExpirationDate: null,
+      mustChangePassword: false,
     },
   });
 
@@ -115,67 +148,203 @@ export default function UsersPage() {
                 Nuevo Usuario
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Crear Usuario</DialogTitle>
               </DialogHeader>
               <Form {...form}>
                 <form
                   onSubmit={form.handleSubmit((data) => createMutation.mutate(data))}
-                  className="space-y-4"
+                  className="space-y-4 max-h-[600px] overflow-y-auto pr-4"
                 >
-                  <FormField
-                    control={form.control}
-                    name="samAccountName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre de Usuario</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="displayName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nombre Completo</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="department"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Departamento</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="samAccountName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre de Usuario (SAM)</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="displayName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre para mostrar</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="givenName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nombre</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="surname"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Apellido</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input {...field} type="email" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="title"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cargo</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="department"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Departamento</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="company"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Empresa</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="officePhone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Teléfono Oficina</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="mobile"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Móvil</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="streetAddress"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Dirección</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Ciudad</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Estado/Provincia</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>País</FormLabel>
+                          <FormControl>
+                            <Input {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
                   <Button
                     type="submit"
                     className="w-full"
@@ -200,6 +369,7 @@ export default function UsersPage() {
                 <TableHead>Nombre</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Departamento</TableHead>
+                <TableHead>Cargo</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -211,6 +381,7 @@ export default function UsersPage() {
                   <TableCell>{user.displayName}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{user.department}</TableCell>
+                  <TableCell>{user.title}</TableCell>
                   <TableCell>
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
