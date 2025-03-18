@@ -46,6 +46,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendStatus(204);
   });
 
+  // AD Users Management
+  app.post("/api/ad/users/:id/reset-password", requireAuth, async (req, res) => {
+    const success = await storage.resetADUserPassword(Number(req.params.id));
+    if (!success) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+    res.sendStatus(200);
+  });
+
+  app.post("/api/ad/users/:id/toggle-lock", requireAuth, async (req, res) => {
+    try {
+      const user = await storage.toggleADUserLock(Number(req.params.id));
+      res.json(user);
+    } catch (error) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+    }
+  });
+
+  app.post("/api/ad/users/:id/disable", requireAuth, async (req, res) => {
+    try {
+      const user = await storage.disableADUser(Number(req.params.id));
+      res.json(user);
+    } catch (error) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+    }
+  });
+
+  app.post("/api/ad/users/:id/enable", requireAuth, async (req, res) => {
+    try {
+      const user = await storage.enableADUser(Number(req.params.id));
+      res.json(user);
+    } catch (error) {
+      res.status(404).json({ message: "Usuario no encontrado" });
+    }
+  });
+
+
   // AD Groups
   app.get("/api/ad/groups", requireAuth, async (req, res) => {
     const groups = await storage.getADGroups();

@@ -6,33 +6,37 @@ const MemoryStore = createMemoryStore(session);
 
 export interface IStorage {
   sessionStore: session.Store;
-  
+
   // Auth
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // AD Users
   getADUsers(): Promise<ADUser[]>;
   getADUser(id: number): Promise<ADUser | undefined>;
   createADUser(user: Omit<ADUser, "id" | "createdAt">): Promise<ADUser>;
   updateADUser(id: number, user: Partial<ADUser>): Promise<ADUser | undefined>;
   deleteADUser(id: number): Promise<boolean>;
-  
+  resetADUserPassword(id: number): Promise<boolean>;
+  toggleADUserLock(id: number): Promise<ADUser>;
+  disableADUser(id: number): Promise<ADUser>;
+  enableADUser(id: number): Promise<ADUser>;
+
   // AD Groups
   getADGroups(): Promise<ADGroup[]>;
   getADGroup(id: number): Promise<ADGroup | undefined>;
   createADGroup(group: Omit<ADGroup, "id" | "createdAt">): Promise<ADGroup>;
   updateADGroup(id: number, group: Partial<ADGroup>): Promise<ADGroup | undefined>;
   deleteADGroup(id: number): Promise<boolean>;
-  
+
   // AD Devices
   getADDevices(): Promise<ADDevice[]>;
   getADDevice(id: number): Promise<ADDevice | undefined>;
   createADDevice(device: Omit<ADDevice, "id">): Promise<ADDevice>;
   updateADDevice(id: number, device: Partial<ADDevice>): Promise<ADDevice | undefined>;
   deleteADDevice(id: number): Promise<boolean>;
-  
+
   // User-Group Mappings
   addUserToGroup(userId: number, groupId: number): Promise<ADUserGroup>;
   removeUserFromGroup(userId: number, groupId: number): Promise<boolean>;
@@ -109,6 +113,49 @@ export class MemStorage implements IStorage {
 
   async deleteADUser(id: number): Promise<boolean> {
     return this.adUsers.delete(id);
+  }
+
+  async resetADUserPassword(id: number): Promise<boolean> {
+    const user = this.adUsers.get(id);
+    if (!user) return false;
+
+    const updatedUser = { 
+      ...user, 
+      mustChangePassword: true,
+      passwordLastSet: new Date()
+    };
+    this.adUsers.set(id, updatedUser);
+    return true;
+  }
+
+  async toggleADUserLock(id: number): Promise<ADUser> {
+    const user = this.adUsers.get(id);
+    if (!user) throw new Error("Usuario no encontrado");
+
+    const updatedUser = { 
+      ...user, 
+      accountLocked: !user.accountLocked 
+    };
+    this.adUsers.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async disableADUser(id: number): Promise<ADUser> {
+    const user = this.adUsers.get(id);
+    if (!user) throw new Error("Usuario no encontrado");
+
+    const updatedUser = { ...user, enabled: false };
+    this.adUsers.set(id, updatedUser);
+    return updatedUser;
+  }
+
+  async enableADUser(id: number): Promise<ADUser> {
+    const user = this.adUsers.get(id);
+    if (!user) throw new Error("Usuario no encontrado");
+
+    const updatedUser = { ...user, enabled: true };
+    this.adUsers.set(id, updatedUser);
+    return updatedUser;
   }
 
   // AD Groups methods

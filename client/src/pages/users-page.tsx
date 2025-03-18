@@ -31,7 +31,14 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, MoreVertical, Lock, Unlock, KeyRound, UserMinus, UserCheck } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface ADUser {
   id: number;
@@ -52,6 +59,8 @@ interface ADUser {
   enabled: boolean;
   accountExpirationDate: Date | null;
   mustChangePassword: boolean;
+  accountLocked: boolean;
+  lastLogon: number | null;
 }
 
 export default function UsersPage() {
@@ -113,6 +122,71 @@ export default function UsersPage() {
       toast({
         title: "Usuario eliminado",
         description: "El usuario se ha eliminado correctamente",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetPasswordMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("POST", `/api/ad/users/${id}/reset-password`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ad/users"] });
+      toast({
+        title: "Contraseña reseteada",
+        description: "El usuario deberá cambiar su contraseña en el próximo inicio de sesión",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleLockMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("POST", `/api/ad/users/${id}/toggle-lock`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ad/users"] });
+      toast({
+        title: "Estado de bloqueo actualizado",
+        description: "El estado de bloqueo del usuario ha sido actualizado",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleEnableMutation = useMutation({
+    mutationFn: async ({ id, enable }: { id: number; enable: boolean }) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/ad/users/${id}/${enable ? "enable" : "disable"}`
+      );
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/ad/users"] });
+      toast({
+        title: "Estado actualizado",
+        description: "El estado del usuario ha sido actualizado",
       });
     },
     onError: (error: Error) => {
@@ -370,6 +444,7 @@ export default function UsersPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Departamento</TableHead>
                 <TableHead>Cargo</TableHead>
+                <TableHead>Último Login</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -383,24 +458,90 @@ export default function UsersPage() {
                   <TableCell>{user.department}</TableCell>
                   <TableCell>{user.title}</TableCell>
                   <TableCell>
-                    <span
-                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        user.enabled
-                          ? "bg-green-50 text-green-700"
-                          : "bg-red-50 text-red-700"
-                      }`}
-                    >
-                      {user.enabled ? "Activo" : "Inactivo"}
-                    </span>
+                    {user.lastLogon ? new Date(user.lastLogon).toLocaleString() : "Nunca"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                          user.enabled
+                            ? "bg-green-50 text-green-700"
+                            : "bg-red-50 text-red-700"
+                        }`}
+                      >
+                        {user.enabled ? "Activo" : "Inactivo"}
+                      </span>
+                      {user.accountLocked && (
+                        <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-yellow-50 text-yellow-700">
+                          Bloqueado
+                        </span>
+                      )}
+                      {user.mustChangePassword && (
+                        <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700">
+                          Cambio de contraseña requerido
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteMutation.mutate(user.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => resetPasswordMutation.mutate(user.id)}
+                        >
+                          <KeyRound className="h-4 w-4 mr-2" />
+                          Resetear Contraseña
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => toggleLockMutation.mutate(user.id)}
+                        >
+                          {user.accountLocked ? (
+                            <>
+                              <Unlock className="h-4 w-4 mr-2" />
+                              Desbloquear Cuenta
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="h-4 w-4 mr-2" />
+                              Bloquear Cuenta
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            toggleEnableMutation.mutate({
+                              id: user.id,
+                              enable: !user.enabled,
+                            })
+                          }
+                        >
+                          {user.enabled ? (
+                            <>
+                              <UserMinus className="h-4 w-4 mr-2" />
+                              Desactivar Usuario
+                            </>
+                          ) : (
+                            <>
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              Activar Usuario
+                            </>
+                          )}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => deleteMutation.mutate(user.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
