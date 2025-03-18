@@ -48,11 +48,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // AD Users Management
   app.post("/api/ad/users/:id/reset-password", requireAuth, async (req, res) => {
-    const success = await storage.resetADUserPassword(Number(req.params.id));
-    if (!success) {
+    const result = await storage.resetADUserPassword(Number(req.params.id));
+    if (!result.success) {
       return res.status(404).json({ message: "Usuario no encontrado" });
     }
-    res.sendStatus(200);
+    res.json({ message: "Contraseña reseteada", newPassword: result.newPassword });
   });
 
   app.post("/api/ad/users/:id/toggle-lock", requireAuth, async (req, res) => {

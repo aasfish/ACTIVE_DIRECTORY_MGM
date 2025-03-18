@@ -135,13 +135,23 @@ export default function UsersPage() {
 
   const resetPasswordMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("POST", `/api/ad/users/${id}/reset-password`);
+      const res = await apiRequest("POST", `/api/ad/users/${id}/reset-password`);
+      return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/ad/users"] });
       toast({
         title: "Contraseña reseteada",
-        description: "El usuario deberá cambiar su contraseña en el próximo inicio de sesión",
+        description: (
+          <div className="mt-2 p-4 bg-muted rounded-md">
+            <p className="mb-2">Nueva contraseña generada:</p>
+            <code className="bg-background px-2 py-1 rounded">{data.newPassword}</code>
+            <p className="mt-2 text-sm text-muted-foreground">
+              El usuario deberá cambiar su contraseña en el próximo inicio de sesión
+            </p>
+          </div>
+        ),
+        duration: 10000,
       });
     },
     onError: (error: Error) => {

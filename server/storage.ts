@@ -18,7 +18,7 @@ export interface IStorage {
   createADUser(user: Omit<ADUser, "id" | "createdAt">): Promise<ADUser>;
   updateADUser(id: number, user: Partial<ADUser>): Promise<ADUser | undefined>;
   deleteADUser(id: number): Promise<boolean>;
-  resetADUserPassword(id: number): Promise<boolean>;
+  resetADUserPassword(id: number): Promise<{success: boolean, newPassword?: string}>;
   toggleADUserLock(id: number): Promise<ADUser>;
   disableADUser(id: number): Promise<ADUser>;
   enableADUser(id: number): Promise<ADUser>;
@@ -105,7 +105,7 @@ export class MemStorage implements IStorage {
   async updateADUser(id: number, update: Partial<ADUser>): Promise<ADUser | undefined> {
     const user = this.adUsers.get(id);
     if (!user) return undefined;
-    
+
     const updatedUser = { ...user, ...update };
     this.adUsers.set(id, updatedUser);
     return updatedUser;
@@ -115,17 +115,18 @@ export class MemStorage implements IStorage {
     return this.adUsers.delete(id);
   }
 
-  async resetADUserPassword(id: number): Promise<boolean> {
+  async resetADUserPassword(id: number): Promise<{success: boolean, newPassword?: string}> {
     const user = this.adUsers.get(id);
-    if (!user) return false;
+    if (!user) return { success: false };
 
+    const newPassword = generateSecurePassword();
     const updatedUser = { 
       ...user, 
       mustChangePassword: true,
       passwordLastSet: new Date()
     };
     this.adUsers.set(id, updatedUser);
-    return true;
+    return { success: true, newPassword };
   }
 
   async toggleADUserLock(id: number): Promise<ADUser> {
@@ -244,6 +245,11 @@ export class MemStorage implements IStorage {
       .map((m) => this.adGroups.get(m.groupId))
       .filter((g): g is ADGroup => g !== undefined);
   }
+}
+
+function generateSecurePassword(): string {
+  // Replace this with a strong password generator in a production environment.
+  return Math.random().toString(36).substring(2, 15);
 }
 
 export const storage = new MemStorage();
