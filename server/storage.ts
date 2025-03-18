@@ -1,6 +1,7 @@
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import { User, ADUser, ADGroup, ADDevice, ADUserGroup, InsertUser } from "@shared/schema";
+import { ADStorage } from './ad-storage';
 
 const MemoryStore = createMemoryStore(session);
 
@@ -252,4 +253,4 @@ function generateSecurePassword(): string {
   return Math.random().toString(36).substring(2, 15);
 }
 
-export const storage = new MemStorage();
+export const storage = new ADStorage();
