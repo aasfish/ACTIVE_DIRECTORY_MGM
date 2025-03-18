@@ -18,7 +18,7 @@ export interface IStorage {
   createADUser(user: Omit<ADUser, "id" | "createdAt">): Promise<ADUser>;
   updateADUser(id: number, user: Partial<ADUser>): Promise<ADUser | undefined>;
   deleteADUser(id: number): Promise<boolean>;
-  resetADUserPassword(id: number): Promise<{success: boolean, newPassword?: string}>;
+  resetADUserPassword(id: number, hashedPassword: string): Promise<ADUser | undefined>;
   toggleADUserLock(id: number): Promise<ADUser>;
   disableADUser(id: number): Promise<ADUser>;
   enableADUser(id: number): Promise<ADUser>;
@@ -115,18 +115,18 @@ export class MemStorage implements IStorage {
     return this.adUsers.delete(id);
   }
 
-  async resetADUserPassword(id: number): Promise<{success: boolean, newPassword?: string}> {
+  async resetADUserPassword(id: number, hashedPassword: string): Promise<ADUser | undefined> {
     const user = this.adUsers.get(id);
-    if (!user) return { success: false };
+    if (!user) return undefined;
 
-    const newPassword = generateSecurePassword();
-    const updatedUser = { 
-      ...user, 
-      mustChangePassword: true,
-      passwordLastSet: new Date()
+    const updatedUser: ADUser = {
+      ...user,
+      passwordLastSet: new Date(),
+      mustChangePassword: true
     };
+
     this.adUsers.set(id, updatedUser);
-    return { success: true, newPassword };
+    return updatedUser;
   }
 
   async toggleADUserLock(id: number): Promise<ADUser> {

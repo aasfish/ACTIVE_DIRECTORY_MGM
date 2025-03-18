@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -39,6 +40,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { useState } from "react";
+import { Label } from "@/components/ui/label";
+
 
 interface ADUser {
   id: number;
@@ -134,24 +138,17 @@ export default function UsersPage() {
   });
 
   const resetPasswordMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const res = await apiRequest("POST", `/api/ad/users/${id}/reset-password`);
+    mutationFn: async ({ id, newPassword }: { id: number; newPassword: string }) => {
+      const res = await apiRequest("POST", `/api/ad/users/${id}/reset-password`, {
+        newPassword,
+      });
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/ad/users"] });
       toast({
-        title: "Contraseña reseteada",
-        description: (
-          <div className="mt-2 p-4 bg-muted rounded-md">
-            <p className="mb-2">Nueva contraseña generada:</p>
-            <code className="bg-background px-2 py-1 rounded">{data.newPassword}</code>
-            <p className="mt-2 text-sm text-muted-foreground">
-              El usuario deberá cambiar su contraseña en el próximo inicio de sesión
-            </p>
-          </div>
-        ),
-        duration: 10000,
+        title: "Contraseña cambiada",
+        description: "La contraseña del usuario ha sido actualizada correctamente",
       });
     },
     onError: (error: Error) => {
@@ -207,6 +204,56 @@ export default function UsersPage() {
       });
     },
   });
+
+  function ResetPasswordDialog({ userId }: { userId: number }) {
+    const [password, setPassword] = useState("");
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      resetPasswordMutation.mutate({ id: userId, newPassword: password });
+      setIsOpen(false);
+      setPassword("");
+    };
+
+    return (
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+            <KeyRound className="h-4 w-4 mr-2" />
+            Cambiar Contraseña
+          </DropdownMenuItem>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cambiar Contraseña</DialogTitle>
+            <DialogDescription>
+              Ingresa la nueva contraseña para el usuario
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Nueva Contraseña</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Ingresa la nueva contraseña"
+              />
+            </div>
+            <Button type="submit" className="w-full">
+              {resetPasswordMutation.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Confirmar Cambio
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
 
   if (isLoading) {
     return (
@@ -501,12 +548,7 @@ export default function UsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => resetPasswordMutation.mutate(user.id)}
-                        >
-                          <KeyRound className="h-4 w-4 mr-2" />
-                          Resetear Contraseña
-                        </DropdownMenuItem>
+                        <ResetPasswordDialog userId={user.id} />
                         <DropdownMenuItem
                           onClick={() => toggleLockMutation.mutate(user.id)}
                         >

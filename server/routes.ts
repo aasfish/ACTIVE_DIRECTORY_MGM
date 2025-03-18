@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { insertADUserSchema, insertADGroupSchema, insertADDeviceSchema } from "@shared/schema";
 
@@ -48,11 +48,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // AD Users Management
   app.post("/api/ad/users/:id/reset-password", requireAuth, async (req, res) => {
-    const result = await storage.resetADUserPassword(Number(req.params.id));
-    if (!result.success) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+    try {
+      const { newPassword } = req.body;
+      if (!newPassword) {
+        return res.status(400).json({ message: "Se requiere una nueva contraseña" });
+      }
+
+      const hashedPassword = await hashPassword(newPassword);
+      const user = await storage.resetADUserPassword(Number(req.params.id), hashedPassword);
+
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+
+      res.json({ message: "Contraseña actualizada correctamente" });
+    } catch (error) {
+      res.status(500).json({ message: "Error al actualizar la contraseña" });
     }
-    res.json({ message: "Contraseña reseteada", newPassword: result.newPassword });
   });
 
   app.post("/api/ad/users/:id/toggle-lock", requireAuth, async (req, res) => {
@@ -81,7 +93,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(404).json({ message: "Usuario no encontrado" });
     }
   });
-
 
   // AD Groups
   app.get("/api/ad/groups", requireAuth, async (req, res) => {
